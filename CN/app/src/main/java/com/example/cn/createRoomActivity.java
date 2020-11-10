@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
 
@@ -16,7 +17,7 @@ public class createRoomActivity extends AppCompatActivity {
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("https://cn-chat.herokuapp.com/");
+            mSocket = IO.socket("https://192.168.0.18:5000");
         } catch (URISyntaxException e) {
             Log.i("error",e.getMessage().toString());
             e.printStackTrace();
@@ -29,7 +30,13 @@ public class createRoomActivity extends AppCompatActivity {
         setContentView(R.layout.activity_create_room);
 
         mSocket.connect();
-
-        Log.i("socket id = ",mSocket.id().toString());
+        mSocket.on("testing", new Emitter.Listener() {
+            @Override
+            public void call(Object... args) {
+                Log.i("message from server",args[0].toString());
+                Log.i("message from server",(String) args[0]);
+            }
+        });
+//        Log.i("socket id = ",mSocket.id().toString());
     }
 }

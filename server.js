@@ -17,7 +17,7 @@ app.use('/', express.static(__dirname + "/public"))
 
 io.on('connection', (socket) => {
     console.log(socket.id)
-
+    socket.emit('testing', "mudneu")
     let userName = '' //This will be the username of the person from where this person logins , since we will be using it again and again. So let's make it global.
 
     socket.on('subscribe', (data) => {
