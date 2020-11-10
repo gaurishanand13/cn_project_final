@@ -11,6 +11,9 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 
+app.set('port', (process.env.PORT || 5000));
+
+
 
 app.use('/', express.static(__dirname + "/public"))
 
@@ -72,6 +75,6 @@ io.on('connection', (socket) => {
 
 //
 
-server.listen(process.env.PORT || 5000, () => {
+server.listen(app.get('port'), () => {
     console.log('Started server on http://localhost:5000')
 })

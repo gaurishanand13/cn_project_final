@@ -17,7 +17,7 @@ public class createRoomActivity extends AppCompatActivity {
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("https://192.168.0.18:5000");
+            mSocket = IO.socket("https://cn-chat.herokuapp.com/");
         } catch (URISyntaxException e) {
             Log.i("error",e.getMessage().toString());
             e.printStackTrace();
