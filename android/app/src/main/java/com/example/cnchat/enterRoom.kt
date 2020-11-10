@@ -7,8 +7,13 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.github.nkzawa.emitter.Emitter
 import com.github.nkzawa.socketio.client.IO
 import com.github.nkzawa.socketio.client.Socket
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import java.net.URI
+import javax.net.ssl.SSLContext
 
 
 class enterRoom : AppCompatActivity() {
@@ -33,34 +38,31 @@ class enterRoom : AppCompatActivity() {
             else{
                 socketHelper.userName = username.text.toString()
                 socketHelper.roomName = roomname.text.toString()
-                connect()
+                GlobalScope.launch {
+                    connect()
+                }
             }
         }
     }
 
 
-    fun connect(){
+    suspend fun connect(){
         try {
+            val sc = SSLContext.getInstance("SSL")
+            sc.init(null, null, null)
             val opts = IO.Options()
-            opts.timeout = 3000
-            opts.reconnection = true
-            opts.reconnectionAttempts = 10
-            opts.reconnectionDelay = 1000
+            opts.secure = true
             opts.forceNew = true
-            socketHelper.socket = IO.socket("http://192.168.0.18:1234/")
-            //
-            if (socketHelper.socket == null) {
-                Log.i("socket is null", "null")
+            opts.reconnection = true
+            //https://192.168.0.18:5000
+            val  socket = IO.socket(URI("https://192.168.0.18:5000")).also{
+
+                Log.i("id= == ",it.connect().id())
             }
-            else{
-                Log.i("socket is null", "not null")
-            }
+
         } catch (e: Exception) {
             Log.i("socket is null", e.message.toString())
             e.printStackTrace()
         }
-        socketHelper.socket.connect()
-        Log.i("hi",socketHelper.socket.id().toString())
-        startActivity(Intent(this,MainActivity::class.java))
     }
 }

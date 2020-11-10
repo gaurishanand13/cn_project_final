@@ -70,8 +70,8 @@ io.on('connection', (socket) => {
     })
 })
 
+//process.env.PORT || 
 
-
-server.listen(process.env.PORT || 5000, () => {
+server.listen(5000, () => {
     console.log('Started server on http://localhost:5000')
 })
