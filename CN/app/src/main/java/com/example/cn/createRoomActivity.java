@@ -16,7 +16,7 @@ public class createRoomActivity extends AppCompatActivity {
     private Socket mSocket;
     {
         try {
-            mSocket = IO.socket("https://192.168.0.25:5000");
+            mSocket = IO.socket("https://cn-chat.herokuapp.com/");
         } catch (URISyntaxException e) {
             Log.i("error",e.getMessage().toString());
             e.printStackTrace();
@@ -29,7 +29,7 @@ public class createRoomActivity extends AppCompatActivity {
         setContentView(R.layout.activity_create_room);
 
         mSocket.connect();
-//        Log.i("localid",)
+
         Log.i("socket id = ",mSocket.id().toString());
     }
 }
