@@ -48,7 +48,7 @@ class enterRoom : AppCompatActivity() {
 
     suspend fun connect(){
         try {
-            //http://192.168.0.18:3000/   
+            //http://192.168.0.18:3000/
             socketHelper.socket = IO.socket("https://cn-chat.herokuapp.com/")
             socketHelper.socket.connect()
             startActivity(Intent(this,MainActivity::class.java))
