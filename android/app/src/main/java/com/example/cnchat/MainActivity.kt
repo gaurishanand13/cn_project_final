@@ -3,10 +3,7 @@ package com.example.cnchat
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.Toast
+import android.widget.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import co.intentservice.chatui.ChatView
@@ -93,6 +90,9 @@ class MainActivity : AppCompatActivity() {
         sendBtn.setOnClickListener {
             if(!messageEditText.text.toString().isEmpty()){
                 sendNewMessgae(messageEditText.text.toString(),socketHelper.roomName)
+
+                //Setting the text as empty - after the message is sent.
+                messageEditText.setText("",TextView.BufferType.EDITABLE)
             }
         }
 
