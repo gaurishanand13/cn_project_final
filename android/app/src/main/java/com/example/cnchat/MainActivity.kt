@@ -5,9 +5,12 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import co.intentservice.chatui.ChatView
+import co.intentservice.chatui.models.ChatMessage
 import com.example.cnchat.adapters.chatRoomAdapter
 import com.example.cnchat.adapters.roomChatInterface
 import com.example.cnchat.model.myMessage
@@ -32,32 +35,41 @@ class MainActivity : AppCompatActivity() {
     fun registerOnMethodOfSocket(){
         socketHelper.socket.on("newUserToChatRoom",object : Emitter.Listener{
             override fun call(vararg args: Any?) {
-                val userNameAdded = args.get(0) as String
-                chatList.add(myMessage(userNameAdded,socketHelper.roomName,"ADDED TO GROUP"))
-                adapter.notifyDataSetChanged()
+                val userNameAdded = args.get(0) as JSONObject
+                chatList.add(myMessage(userNameAdded.getString("userName"),socketHelper.roomName,"ADDED TO GROUP"))
+                Log.i("updated chat list" , chatList.toString())
+                runOnUiThread {
+                    adapter.notifyDataSetChanged()
+                }
             }
         })
 
         socketHelper.socket.on("userLeftChatRoom",object : Emitter.Listener{
             override fun call(vararg args: Any?) {
-                val userNameLeft = args.get(0) as String
-                chatList.add(myMessage(userNameLeft,socketHelper.roomName,"LEFT GROUP"))
-                adapter.notifyDataSetChanged()
+                val userNameLeft = args.get(0) as JSONObject
+                chatList.add(myMessage(userNameLeft.getString("userName"),socketHelper.roomName,"LEFT GROUP"))
+                runOnUiThread {
+                    adapter.notifyDataSetChanged()
+                }
             }
         })
 
         socketHelper.socket.on("updateChat",object : Emitter.Listener{
             override fun call(vararg args: Any?) {
-                val data = args.get(0) as JSONObject
 
-                val username = data.getString("userName")
-                val messageContent = data.getString("messageContent")
-                val roomName = data.getString("messageContent")
+                val json = args.get(0) as JSONObject
+
+                val username = json.getString("userName")
+                val messageContent = json.getString("messageContent")
+                val roomName = json.getString("roomName")
 
                 val newMessage = myMessage(username,roomName,messageContent)
+                Log.i("newMessage",newMessage.toString())
                 chatList.add(newMessage)
 
-                adapter.notifyDataSetChanged()
+                runOnUiThread {
+                    adapter.notifyDataSetChanged()
+                }
             }
         })
     }
@@ -66,7 +78,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val sendBtn = findViewById<Button>(R.id.sendBtn)
+
+        val sendBtn = findViewById<ImageButton>(R.id.sendBtn)
         val messageEditText = findViewById<EditText>(R.id.messageEditText)
 
         /**
@@ -91,21 +104,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun subsribeUser(){
-        val jsonData = gson.toJson(registerSocket(socketHelper.userName,socketHelper.roomName))
-        socketHelper.socket.emit("subscribe",jsonData)
-        socketHelper.socket.disconnect()
+        val jsonObject = JSONObject()
+        jsonObject.put("userName",socketHelper.userName)
+        jsonObject.put("roomName",socketHelper.roomName)
+        socketHelper.socket.emit("subscribe",jsonObject)
     }
 
     fun unSubscribeUser(){
-        val jsonData = gson.toJson(registerSocket(socketHelper.userName,socketHelper.roomName))
-        socketHelper.socket.emit("unsubscribe",jsonData)
+        val jsonObject = JSONObject()
+        jsonObject.put("userName",socketHelper.userName)
+        jsonObject.put("roomName",socketHelper.roomName)
+        socketHelper.socket.emit("unsubscribe",jsonObject)
         socketHelper.socket.disconnect()
     }
 
+
     fun sendNewMessgae(msgContent : String, roomName : String){
-        val jsonData = gson.toJson(myMessage(msgContent,roomName,socketHelper.userName))
-        socketHelper.socket.emit("newMessage",jsonData)
-        socketHelper.socket.disconnect()
+        val jsonObject = JSONObject()
+        jsonObject.put("userName",socketHelper.userName)
+        jsonObject.put("messageContent",msgContent)
+        jsonObject.put("roomName",socketHelper.roomName)
+        socketHelper.socket.emit("newMessage",jsonObject)
     }
 
     override fun onDestroy() {

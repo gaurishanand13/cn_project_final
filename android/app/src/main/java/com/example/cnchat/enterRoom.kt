@@ -48,18 +48,10 @@ class enterRoom : AppCompatActivity() {
 
     suspend fun connect(){
         try {
-            val sc = SSLContext.getInstance("SSL")
-            sc.init(null, null, null)
-            val opts = IO.Options()
-            opts.secure = true
-            opts.forceNew = true
-            opts.reconnection = true
-            //https://192.168.0.18:5000
-            val  socket = IO.socket(URI("https://192.168.0.18:5000")).also{
-
-                Log.i("id= == ",it.connect().id())
-            }
-
+            socketHelper.socket = IO.socket("http://192.168.0.18:3000/")
+            socketHelper.socket.connect()
+            startActivity(Intent(this,MainActivity::class.java))
+            finish()
         } catch (e: Exception) {
             Log.i("socket is null", e.message.toString())
             e.printStackTrace()
