@@ -1,1 +1,1 @@
-web: node SocketIO_Node.js_server/node-js-getting-started/index.js
+web: node node_js_server/index.js

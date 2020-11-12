@@ -11,7 +11,6 @@ import co.intentservice.chatui.models.ChatMessage
 import com.example.cnchat.adapters.chatRoomAdapter
 import com.example.cnchat.adapters.roomChatInterface
 import com.example.cnchat.model.myMessage
-import com.example.cnchat.model.registerSocket
 import com.github.nkzawa.emitter.Emitter
 import com.google.gson.Gson
 import org.json.JSONObject
