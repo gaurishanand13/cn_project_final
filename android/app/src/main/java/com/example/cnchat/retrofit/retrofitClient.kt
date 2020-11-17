@@ -1,12 +1,10 @@
 package com.example.cnchat.retrofit
-
 import android.content.Context
-import android.preference.PreferenceManager
-import android.util.Log
 import com.example.cnchat.constants
-import com.squareup.okhttp.Interceptor
-import com.squareup.okhttp.Response
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -14,19 +12,22 @@ import java.util.concurrent.TimeUnit
 
 object retrofitClient{
 
-    fun getClient(): OkHttpClient? {
-        val interceptor = HttpLoggingInterceptor()
-        interceptor.setLevel(HttpLoggingInterceptor.Level.HEADERS)
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
+    class AuthInterceptor(context: Context) : Interceptor {
+        override fun intercept(chain: Interceptor.Chain): Response {
+            val requestBuilder = chain.request().newBuilder()
+            requestBuilder.addHeader("Authorization", "Bearer ${constants.token}")
+            return chain.proceed(requestBuilder.build())
+        }
+    }
+    private fun okhttpClient(context: Context): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(AuthInterceptor(context))
+            .build()
+    }
 
-        //okhttp3.Interceptor {
-        //            val original = it.request()
-        //            val requestBuilder = original.newBuilder()
-        //            requestBuilder.addHeader("content-type", "application/json")
-        //            requestBuilder.addHeader("token", constants.token)
-        //            val request = requestBuilder.build()
-        //            it.proceed(request)
-        //        }
+    fun getClient(): OkHttpClient {
+        val interceptor = HttpLoggingInterceptor()
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
 
         val httpClient = OkHttpClient.Builder()
         httpClient.addInterceptor(interceptor)
@@ -42,8 +43,8 @@ object retrofitClient{
     val retrofit = Retrofit.Builder()
         .baseUrl(constants.baseURL)
         .addConverterFactory(GsonConverterFactory.create())
+        .client(getClient())
         .build()
-//        .client(getClient())
 
 
     val retrofitService = retrofit.create(apiService::class.java)

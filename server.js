@@ -1,8 +1,9 @@
 /**
  * Dependencies used are - 
- * express, body-parser , mongoose , socket.io , jsonwebtoken , bcrypt ,
+ * express, body-parser , mongoose , socket.io , jsonwebtoken , bcrypt , firebase-admin
  * bcrypt - it is used to hash passwords of users so that passwords are encrypted before storing in database (so that even if we give access to DB to someone else,  no one gets access to it).
  * jsonwebtoken - it is used to generate token which will contain the information of the user
+ * firebase-admin - install it to use firebase in your node js project. Also to use firebase in node, make sure to generate private key from project settings -> Generate new private key
  */
 const express = require('express')
 var app = express();
@@ -37,9 +38,14 @@ async function connectToDB() {
 connectToDB()
 
 
+//Server is Made on
+http.listen(app.get('port'), function() {
+    console.log('Node app is running on port', app.get('port'));
+});
 
 
-//Setting up of the socket of the server
+//---------------------------------------------------------------------------------------------------
+//Setting up of the socket of the server - this was used in my first app but not in my final app as in my final app - I am using FCM for this
 io.on('connection', function(socket) {
 
     console.log(socket.id)
@@ -96,10 +102,4 @@ io.on('connection', function(socket) {
     socket.on('disconnect', () => {
         console.log('User with id = ' + socket.id + " is disconnect")
     })
-});
-
-
-//Server is Made on
-http.listen(app.get('port'), function() {
-    console.log('Node app is running on port', app.get('port'));
 });

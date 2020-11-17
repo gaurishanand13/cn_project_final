@@ -22,6 +22,8 @@ route.post('/', async(req, res) => {
     const email = req.body.email
     const password = req.body.password
 
+    const error = new Error()
+
     console.log(firstName, lastName, email, password)
 
     try {
@@ -32,10 +34,8 @@ route.post('/', async(req, res) => {
 
         if (user) {
             //If user is found ,  it means email is already used by someone else
-            const data = {
-                error: "Email already in use"
-            }
-            res.status(400).send(data)
+            error.message = "Email already in use"
+            res.status(400).send(error)
 
         } else {
             //Now since we have not found that user doesn't exist before ,  we can create a new user for this
@@ -50,19 +50,18 @@ route.post('/', async(req, res) => {
             const data = {
                 token: token,
                 user: {
-                    firstName: user.firstName,
-                    lastName: user.lastName,
+                    firstName: firstName,
+                    lastName: lastName,
                     email: email
                 }
             }
+            console.log(data)
             res.status(200).send(data)
         }
     } catch (error) {
         console.log('Error in register', error)
-        const data = {
-            error: "Error! try again"
-        }
-        res.status(400).send(data)
+        error.message = "Error! try again"
+        res.status(400).send(error)
     }
 })
 

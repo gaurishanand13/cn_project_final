@@ -3,6 +3,7 @@ const { SECRET_KEY } = require('./../config')
 
 
 function auth(req, res, callbackFunction) {
+    const error = new Error()
     try {
         const authHeader = req.headers.authorization
         if (authHeader) {
@@ -12,22 +13,16 @@ function auth(req, res, callbackFunction) {
                 req.user = user //inserting the user details found through this token 
                 callbackFunction(req, res) //Calling the callback function if user verified
             } else {
-                const data = {
-                    error: "authorization token must be a Bearer [token]"
-                }
-                res.status(402).send(data)
+                error.message = "authorization token must be a Bearer [token]"
+                res.status(402).send(error)
             }
         } else {
-            const data = {
-                error: "Authorization header not present"
-            }
-            res.status(402).send(data)
+            error.message = "Authorization header not present"
+            res.status(402).send(error)
         }
     } catch (error) {
-        const data = {
-            error: "Error! Invalid / Expired Token"
-        }
-        res.status(402).send(data)
+        error.message = "Error! Invalid / Expired Token"
+        res.status(402).send(error)
     }
 }
 

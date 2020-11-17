@@ -10,17 +10,15 @@ import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.cnchat.R
-import com.example.cnchat.model.myMessage
+import com.example.cnchat.constants
+import com.example.cnchat.room.models.messageTable
 import com.example.cnchat.socketHelper
 
 
-public interface roomChatInterface{
-    fun onClick(position: Int)
-}
 
 class ViewHolder(itemView : View ) : RecyclerView.ViewHolder(itemView)
 
-class chatRoomAdapter(val context: Context,val myInterface : roomChatInterface,val chatList : ArrayList<myMessage>): RecyclerView.Adapter<ViewHolder>() {
+class chatRoomAdapter(val context: Context,val chatList : ArrayList<messageTable>): RecyclerView.Adapter<ViewHolder>() {
 
     var added_or_left_textView : TextView ? =null
     var nickname: TextView? = null
@@ -46,11 +44,11 @@ class chatRoomAdapter(val context: Context,val myInterface : roomChatInterface,v
         message_one = holder.itemView.findViewById(R.id.message_body)
         message_two = holder.itemView.findViewById(R.id.message_body_two)
 
-        nickname!!.text = chatList.get(position).sendersUserName
-        message_one!!.text = chatList.get(position).messageContent
-        message_two!!.text = chatList.get(position).messageContent
+        nickname!!.text = chatList.get(position).sender
+        message_one!!.text = chatList.get(position).text
+        message_two!!.text = chatList.get(position).text
 
-        if(chatList.get(position).sendersUserName.equals(socketHelper.userName)){
+        if(chatList.get(position).sender.equals(constants.usersEmail)){
             relativeLayoutMessageOthers!!.visibility = View.GONE
             added_or_left_textView!!.visibility = View.GONE
             relativeLayoutMessageMe!!.visibility = View.VISIBLE
@@ -62,19 +60,11 @@ class chatRoomAdapter(val context: Context,val myInterface : roomChatInterface,v
             added_or_left_textView!!.visibility = View.GONE
         }
 
-        if(chatList.get(position).messageContent.equals("ADDED TO GROUP" )|| chatList.get(position).messageContent.equals("LEFT GROUP" )){
+        if(chatList.get(position).text.contains("ADDED" )){
             relativeLayoutMessageOthers!!.visibility = View.GONE
             relativeLayoutMessageMe!!.visibility = View.GONE
             added_or_left_textView!!.visibility = View.VISIBLE
-
-            if(chatList.get(position).messageContent.equals("ADDED TO GROUP" )){
-                added_or_left_textView!!.text = chatList.get(position).sendersUserName + " Added"
-            }
-            else{
-                added_or_left_textView!!.text = chatList.get(position).sendersUserName + " Left"
-            }
-
-            //holder.itemView.findViewById<LinearLayout>(R.id.linearLayout).gravity = Gravity.CENTER
+            added_or_left_textView!!.text = chatList.get(position).text
         }
     }
 }

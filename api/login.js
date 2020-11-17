@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 const { userModel } = require('./../model/user')
 const { SECRET_KEY } = require('./../config');
 
+
 function getSignedToken(user) {
     //This token will contain the information encoded in itself
     return jwt.sign({
@@ -19,6 +20,7 @@ function getSignedToken(user) {
 route.post('/', async(req, res) => {
     const email = req.body.email
     const password = req.body.password
+    const error = new Error()
 
     console.log(email, password)
     try {
@@ -41,23 +43,17 @@ route.post('/', async(req, res) => {
                 }
                 res.status(201).send(data)
             } else {
-                const data = {
-                    error: "Invalid password"
-                }
-                res.status(401).send(data)
+                error.message = "Invalid Password"
+                res.status(401).send(error)
             }
         } else {
             //Email doesn't exist
-            const data = {
-                error: "Email not registered"
-            }
-            res.status(401).send(data)
+            error.message = "Email not Registered"
+            res.status(401).send(error)
         }
     } catch (error) {
-        const data = {
-            error: "Error! try again"
-        }
-        res.status(401).send(data)
+        error.message = "Error! Try again"
+        res.status(401).send(error)
     }
 })
 
