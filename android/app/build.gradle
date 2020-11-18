@@ -109,4 +109,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.2.0"
     implementation "androidx.lifecycle:lifecycle-common-java8:2.2.0"
 
+
+    //Work Manager
+    implementation "androidx.work:work-runtime-ktx:2.3.4"
 }

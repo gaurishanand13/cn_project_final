@@ -45,7 +45,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun sendMessage(receipentsEmail : String,messge : String){
+
         retrofitClient.retrofitService.sendMessage(constants.bearer+constants.token,receipentsEmail,messge).enqueue(object : Callback<fcmTokenResponse>{
+
             override fun onFailure(call: Call<fcmTokenResponse>, t: Throwable) {
                 Toast.makeText(this@MainActivity,t.message,Toast.LENGTH_SHORT).show()
                 Log.i("err in sending message",t.message.toString())
@@ -108,18 +110,17 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val receipents = intent.getStringExtra("reqEmail")
+        val receipentsEmail = intent.getStringExtra("reqEmail")
 
 
         sendBtn.setOnClickListener {
             if(!messageEditText.text.toString().isEmpty()){
                 //Send the message to the user
-                sendMessage(receipents!!,messageEditText.text.toString())
+                sendMessage(receipentsEmail!!,messageEditText.text.toString())
 
                 //Setting the text as empty - after the message is sent.
                 messageEditText.setText("",TextView.BufferType.EDITABLE)

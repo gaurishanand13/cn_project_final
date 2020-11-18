@@ -10,26 +10,34 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.example.cnchat.MainActivity
 import com.example.cnchat.constants
 import com.example.cnchat.myApplicationClass
+import com.example.cnchat.repositary.messageRepositary
 import com.example.cnchat.retrofit.model.message
 import com.example.cnchat.retrofit.retrofitClient
 import com.example.cnchat.room.models.friendsTable
 import com.example.cnchat.room.models.messageTable
+import com.example.cnchat.room.myRoomDatabase
 import com.example.cnchat.viewModel.messageViewModel
 import com.example.cnchat.viewModel.messageViewModelFactory
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import org.jetbrains.anko.runOnUiThread
 import java.io.IOException
+import java.lang.Runnable
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlin.random.Random
 
 
@@ -40,7 +48,7 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
         super.onNewToken(s)
 
         //Update this FCM token on server too
-        val sPref = this.getSharedPreferences(getPackageName(), Context.MODE_PRIVATE)
+        val sPref = applicationContext.getSharedPreferences(getPackageName(), Context.MODE_PRIVATE)
         constants.token = sPref.getString(constants.token_name, "")!!
         /**
          * FCM token to the device may be assigned just after the app in installed , user may not have still logged in. So we should make sure that user
@@ -53,6 +61,7 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
         else{
             //User is not logged in, so doesn't perform this operation.
         }
+
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
@@ -65,6 +74,14 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
         val title = data["title"].toString()
         val receipent = data["receipent"].toString()
         val body = data["body"].toString()
+
+        //Also save this data in the room database so that data get updated in the app too.
+        Log.i("contextt",applicationContext.toString())
+        GlobalScope.launch {
+            Log.i("contextt",applicationContext.toString())
+            updateDataInRoom(sendersEmail,body,receipent)
+        }
+
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val NOTIFICATION_CHANNEL_ID = packageName
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -93,31 +110,18 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
             .setContentInfo("Info")
         notificationManager.notify(Random.nextInt(), notificationBuilder.build())
 
-        //Also save this data in the room database so that data get updated in the app too.
-        updateDataInRoom(sendersEmail,body,receipent)
     }
 
-    fun updateDataInRoom(sendersEmail: String, message: String,receipent: String){
+    suspend fun updateDataInRoom(sendersEmail: String, message: String, receipent: String){
 
-        //First get the current time
-        val c: Date = Calendar.getInstance().getTime()
+        try {
 
-        GlobalScope.launch {
-            val ans = (application as myApplicationClass).repository.isUserExists(
-                sendersEmail
-            )
-            if(ans.size==0){
-                //Then insert the user
-                (application as myApplicationClass).repository.insertUser(
-                    friendsTable(lastMessageExchanged = message, friendsEmail= sendersEmail, date = constants.fromDate(c))
-                )
-            }
-            else{
-                //Otherwise update the user in the room database
-                ans[0].lastMessageExchanged = message
-                ans[0].date = constants.fromDate(c)
-                (application as myApplicationClass).repository.updateUser(ans[0])
-            }
+            //First get the current time
+            val c: Date = Calendar.getInstance().getTime()
+
+            val applicationScope = CoroutineScope(currentCoroutineContext())
+            val database = myRoomDatabase.getDatabase(this, applicationScope)
+            val repository = messageRepositary(database.msgDao(),database.frndsDao())
 
             //Setting the date
             var postFormater = SimpleDateFormat("MMMM dd, yyyy")
@@ -128,7 +132,7 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
             val time = postFormater.format(c)
 
 
-            (application as myApplicationClass).repository.insertMessage(
+            repository.insertMessage(
                 messageTable(
                     text = message,
                     sender = sendersEmail,
@@ -137,6 +141,30 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
                     timeofmessaging = time
                 )
             )
+
+            repository.isUserExists(
+                sendersEmail
+            ).also {
+                if(it.size==0){
+                    //Then insert the user
+                    repository.insertUser(
+                        friendsTable(lastMessageExchanged = message, friendsEmail= sendersEmail, date = constants.fromDate(c))
+                    )
+                }
+                else{
+                    //Otherwise update the user in the room database
+                    it[0].lastMessageExchanged = message
+                    it[0].date = constants.fromDate(c)
+                    repository.updateUser(it[0])
+                }
+            }
+
+        }catch (e : Exception){
+            runOnUiThread {
+                Toast.makeText(applicationContext,e.message.toString(),Toast.LENGTH_LONG).show()
+            }
+            Log.i("error ------",e.message.toString())
+            e.printStackTrace()
         }
     }
 
