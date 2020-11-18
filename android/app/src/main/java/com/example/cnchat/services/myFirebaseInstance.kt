@@ -119,8 +119,8 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
             //First get the current time
             val c: Date = Calendar.getInstance().getTime()
 
-            val applicationScope = CoroutineScope(currentCoroutineContext())
-            val database = myRoomDatabase.getDatabase(this, applicationScope)
+            val applicationScope = CoroutineScope(SupervisorJob())
+            val database = myRoomDatabase.getDatabase(this.application, applicationScope)
             val repository = messageRepositary(database.msgDao(),database.frndsDao())
 
             //Setting the date
