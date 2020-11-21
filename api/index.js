@@ -7,6 +7,7 @@ route.use('/register', require('./register').route)
 route.use('/getMessages', require('./getMessages').route)
 route.use('/sendMessage', require('./sendMessage').route)
 route.use('/updateFCMToken', require('./updateFCMToken').route)
+route.use('/addUser', require('./addUser').route)
 
 
 

@@ -1,11 +1,9 @@
 const route = require('express').Router();
-const { fcmTokeneModel } = require('./../model/fcmToken')
 const { userModel } = require('./../model/user')
 const { auth } = require('./../middleware/auth')
 
 /**
- * Note FCM token table will be having the table only when the user is logged in, when user logsOut. The app should
- * backout.
+ * We have to update the fcmToken in the userModel table, just make sure while updating user exists in table
  */
 route.post('/', async(req, res) => {
     const error = new Error()
@@ -14,31 +12,25 @@ route.post('/', async(req, res) => {
             /**
              * Now insert the fcm token of this email in database, first find if user exist in the database or not
              */
-            const user = await fcmTokeneModel.findOne({
+            const user = await userModel.findOne({
                 email: req.user.email
             })
             if (user) {
-                //It means update the already inserted token of an exisiting email
-                console.log('already has an existing email')
-                await fcmTokeneModel.updateOne({
+                //It means user exists in the database, so we can update the database
+                console.log('SUCCESS IN fcmTOKEN', req.body.fcmToken)
+                await userModel.updateOne({
                     email: user.email
                 }, {
                     fcmToken: req.body.fcmToken
                 })
-                console.log('hey1', req.body.fcmToken)
             } else {
-                console.log('does not have an existing email');
-                //It means the fcm token of the user is being inserted for the first time, so insert it
-                const newToken = new fcmTokeneModel({
-                    email: req.user.email,
-                    fcmToken: req.body.fcmToken
-                })
-                await newToken.save()
+                //User doesn't exists in the database, so don't need to add the fcm token anywhere.
+                console.log('user doesnt exists')
             }
             const data = {
                 message: "success"
             }
-            console.log('success in saving token')
+            console.log('SUCCESS IN fcmTOKEN', req.body.fcmToken)
             res.status(200).send(data)
         })
     } catch (err) {

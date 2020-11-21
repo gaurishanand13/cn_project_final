@@ -84,6 +84,9 @@ class register : AppCompatActivity() {
 
                         constants.token = res?.token!!
                         constants.usersEmail = res.user?.email!!
+                        constants.usersFirstName = res?.user?.firstName
+                        constants.usersLastName =  res?.user?.lastName
+
                         sharedPref.putString(constants.token_name,res.token)
                         sharedPref.putString(constants.first_name,res.user?.firstName)
                         sharedPref.putString(constants.last_name,res.user?.lastName)

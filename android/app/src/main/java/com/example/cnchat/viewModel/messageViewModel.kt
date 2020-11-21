@@ -30,23 +30,9 @@ class messageViewModel(private val repository: messageRepositary) : ViewModel() 
             repository.insertUser(friend)
         }
     }
-    fun updateUser(friend: friendsTable){
-        viewModelScope.launch {
-            repository.updateUser(friend)
-        }
-    }
 
     fun insertMessage(message: messageTable) = viewModelScope.launch {
         repository.insertMessage(message)
-    }
-
-    suspend fun isUserExists(email : String) : List<friendsTable>{
-        var ans : List<friendsTable>? = null
-        val x  = GlobalScope.async {
-            ans =  repository.isUserExists(email)
-        }
-        x.await()
-        return ans!!
     }
 }
 

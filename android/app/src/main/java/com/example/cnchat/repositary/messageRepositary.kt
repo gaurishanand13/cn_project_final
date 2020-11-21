@@ -33,19 +33,6 @@ class messageRepositary(val msgDao: messageDao,val frndsDao : friendsDao) {
         frndsDao.insert(friend)
     }
 
-    @Suppress("RedundantSuspendModifier")
-    @WorkerThread
-    suspend fun updateUser(friend : friendsTable){
-        frndsDao.update(friend)
-    }
-
-
-    @Suppress("RedundantSuspendModifier")
-    @WorkerThread
-    suspend fun isUserExists(email : String) : List<friendsTable>{
-        return frndsDao.ifUserExists(email)
-    }
-
     /**
      * This will be used to maintain the messages of current chat opened.
      */

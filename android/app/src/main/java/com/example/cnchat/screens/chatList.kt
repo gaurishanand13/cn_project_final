@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.cnchat.*
 import com.example.cnchat.adapters.chatListAdapter
 import com.example.cnchat.adapters.chatListInterface
-import com.example.cnchat.retrofit.model.fcmTokenResponse
+import com.example.cnchat.retrofit.model.sendMessageResponse
 import com.example.cnchat.retrofit.retrofitClient
 import com.example.cnchat.room.models.friendsTable
 import com.example.cnchat.room.models.messageTable
@@ -26,13 +26,10 @@ import com.github.nkzawa.socketio.client.IO
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.android.synthetic.main.content_chat_list.*
 import kotlinx.android.synthetic.main.create_room_alert_dialog.view.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -71,16 +68,23 @@ class chatList : AppCompatActivity() {
         return super.onCreateOptionsMenu(menu)
     }
 
+
     val list = ArrayList<friendsTable>() //This is the chat list adapter which will be displayed in the dashboard adapter
 
+
+    fun navigateToChatActivity(friendsEmail : String,firstName : String,lastName : String){
+        val intent = Intent(this@chatList,MainActivity::class.java)
+        intent.putExtra("reqEmail",friendsEmail)
+        intent.putExtra("firstName",firstName)
+        intent.putExtra("lastName",lastName)
+        startActivity(intent)
+    }
     fun setUpActivity(){
         //First set up the main adapter
         val myInterface = object  : chatListInterface{
             override fun onClick(position: Int) {
                 //Setting up on Click for the app
-                val intent = Intent(this@chatList,MainActivity::class.java)
-                intent.putExtra("reqEmail",list.get(position).friendsEmail)
-                startActivity(intent)
+                navigateToChatActivity(list.get(position).friendsEmail,list.get(position).friendsFirstName,list.get(position).friendslastName)
             }
         }
         val adapter = chatListAdapter(this,myInterface,list)
@@ -89,30 +93,22 @@ class chatList : AppCompatActivity() {
 
         wordViewModel.allUsers.observe(this, androidx.lifecycle.Observer{
             list.clear()
-            list.addAll(it)
+            list.addAll(it.reversed())
             adapter.notifyDataSetChanged()
         })
     }
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_list)
         setSupportActionBar(findViewById(R.id.toolbar))
 
-
         setUpActivity()
-//        //First set up the socket
-//        GlobalScope.launch {
-//            setUpSocket()
-//        }
 
         //Setting up the floating action button
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { view ->
             generateAlertDialog()
         }
     }
-
     suspend fun setUpSocket(){
         try {
             val sharedPref = this.getSharedPreferences(constants.sharedPrefName, Context.MODE_PRIVATE)
@@ -141,36 +137,35 @@ class chatList : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.create_room_alert_dialog,null)
         dialog.setView(dialogView)
         dialog.setCancelable(true)
-
         val alertDialog = dialog.create()
+
         dialogView.enterRoomButton.setOnClickListener {
             if(dialogView.enterRoomNameEditText.text.toString().isEmpty()){
-                Toast.makeText(this,"Enter user's email",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,"Enter some user's email id",Toast.LENGTH_SHORT).show()
             }else{
-
                 val progressDialog = ProgressDialog(this)
                 progressDialog.setMessage("ADDING USER..")
                 progressDialog.show()
 
                 //Send the message to the user using the server
                 val receipentsEmail = dialogView.enterRoomNameEditText.text.toString()
-                val message = "${constants.usersEmail} ADDED ${receipentsEmail}"
 
-                retrofitClient.retrofitService.sendMessage(constants.bearer + constants.token, receipentsEmail, message).enqueue(object : Callback<fcmTokenResponse>{
+                //Now check if user exists or not first, then perform these actions
+                retrofitClient.retrofitService.addUser(constants.bearer + constants.token, receipentsEmail).enqueue(object : Callback<sendMessageResponse>{
 
-                    override fun onFailure(call: Call<fcmTokenResponse>, t: Throwable) {
+                    override fun onFailure(call: Call<sendMessageResponse>, t: Throwable) {
                         Toast.makeText(this@chatList,t.message,Toast.LENGTH_SHORT).show()
                         progressDialog.dismiss()
-                        Log.i("err in sending message",t.message.toString())
+                        Log.i("err in checking user",t.message.toString())
                     }
 
-                    override fun onResponse(call: Call<fcmTokenResponse>, response: Response<fcmTokenResponse>) {
+                    override fun onResponse(call: Call<sendMessageResponse>, response: Response<sendMessageResponse>) {
                         progressDialog.dismiss()
 
                         if(response.code()==200){
-                            //Now it means data is successfully sent to the other user too. Now let's save this too in our local database
+                            //Now it means user exists
                             alertDialog.dismiss()
-                            addMessageToDB(receipentsEmail,message)
+                            navigateToChatActivity(response.body()?.recipient!!.email,response.body()?.recipient!!.firstName,response.body()?.recipient!!.lastName)
                         }
                         else{
                             val jsonObject = JSONObject(response.errorBody()?.string())
@@ -184,46 +179,5 @@ class chatList : AppCompatActivity() {
         alertDialog.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         alertDialog.show()
     }
-    fun addMessageToDB(receipentsEmail : String,messge : String){
 
-        //First insert this message in the database
-        val c: Date = Calendar.getInstance().getTime()
-        //Setting the date
-        var postFormater = SimpleDateFormat("MMMM dd, yyyy")
-        val newDateStr: String = postFormater.format(c)
-
-        //"hh:mm a"
-        postFormater = SimpleDateFormat("hh:mm a")
-        val time = postFormater.format(c)
-
-
-        wordViewModel.insertMessage(
-            messageTable(
-            text = messge,
-            sender = constants.usersEmail,
-            recipient = receipentsEmail,
-            dateofmessaging = newDateStr,
-            timeofmessaging = time
-        ))
-
-        //Also update the last message in the table for this particular user
-        GlobalScope.launch {
-            wordViewModel.isUserExists(
-                    receipentsEmail
-            ).also {
-                if(it.size==0){
-                    //Then insert the user as we are chatting for the first time with the user
-                    wordViewModel.insertUser(
-                        friendsTable(lastMessageExchanged = messge, friendsEmail= receipentsEmail, date = constants.fromDate(c))
-                    )
-                }
-                else{
-                    //Otherwise update the user in the room database
-                    it[0].lastMessageExchanged = messge
-                    it[0].date = constants.fromDate(c)
-                    wordViewModel.updateUser(it[0])
-                }
-            }
-        }
-    }
 }

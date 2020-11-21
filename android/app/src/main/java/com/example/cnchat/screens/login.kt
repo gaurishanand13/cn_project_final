@@ -37,13 +37,14 @@ class login : AppCompatActivity() {
         if(!sharedPref.getString(constants.token_name,"").equals("")){
             constants.token = sharedPref.getString(constants.token_name,"")!!
             constants.usersEmail = sharedPref.getString(constants.email,"")!!
+            constants.usersFirstName = sharedPref.getString(constants.first_name,"")!!
+            constants.usersLastName =  sharedPref.getString(constants.last_name,"")!!
             startActivity(Intent(this,chatList::class.java))
             finish()
         }
 
         //Now setting up the activity
         setContentView(R.layout.activity_login)
-
 
         cirLoginButton.setOnClickListener {
             if(editTextEmail.text.toString().isEmpty() || editTextPassword.text.toString().isEmpty()){
@@ -88,6 +89,8 @@ class login : AppCompatActivity() {
                                 //Saving the user's data in your local machine
                                 constants.token = res.token!!
                                 constants.usersEmail = res.user?.email
+                                constants.usersFirstName = res?.user?.firstName
+                                constants.usersLastName =  res?.user?.lastName
                                 sharedPref.putString(constants.token_name, res.token)
                                 sharedPref.putString(constants.first_name, res.user?.firstName)
                                 sharedPref.putString(constants.last_name, res.user?.lastName)

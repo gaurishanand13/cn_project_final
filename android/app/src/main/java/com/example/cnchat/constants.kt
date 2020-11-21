@@ -14,6 +14,8 @@ object constants{
     val email = "email"
     val password = "password"
     var usersEmail = ""
+    var usersFirstName = ""
+    var usersLastName = ""
 
 
     //Converrts long to date

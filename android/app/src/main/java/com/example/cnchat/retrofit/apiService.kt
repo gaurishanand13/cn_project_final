@@ -2,6 +2,7 @@ package com.example.cnchat.retrofit
 
 import com.example.cnchat.retrofit.model.fcmTokenResponse
 import com.example.cnchat.retrofit.model.loginRegisterResponse
+import com.example.cnchat.retrofit.model.sendMessageResponse
 import retrofit2.http.*
 
 interface apiService{
@@ -32,13 +33,21 @@ interface apiService{
     ) : retrofit2.Call<fcmTokenResponse>
 
 
+    @POST("addUser")
+    @FormUrlEncoded
+    fun addUser(
+            @Header("Authorization") authorization: String,
+            @Field("email") email:String
+    ) : retrofit2.Call<sendMessageResponse>
+
+
     @POST("sendMessage")
     @FormUrlEncoded
     fun sendMessage(
         @Header("Authorization") authorization: String,
         @Field("email") email:String,
         @Field("message") message:String
-    ) : retrofit2.Call<fcmTokenResponse>
+    ) : retrofit2.Call<sendMessageResponse>
 
 
 }

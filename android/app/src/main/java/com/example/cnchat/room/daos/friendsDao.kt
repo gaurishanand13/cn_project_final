@@ -9,23 +9,28 @@ import com.example.cnchat.room.models.messageTable
 interface friendsDao {
 
     /**
-     * This function will be used when the user is using the app to constantly update the changed made to the database
+     * This function will be used when the user is using the app to constantly update the changed made to the database for the home adapter
+     * also get these messages in descending order of tim
      */
-    @Query("SELECT * FROM friendsTable ORDER BY date DESC")
+    @Query("SELECT * FROM friendsTable")
     fun getWholeList(): LiveData<List<friendsTable>>
 
-    /**
-     * Since when the app is in background state, we only need the values once to check if user exist or not
-     */
-    @Query("SELECT * FROM friendsTable WHERE friendsEmail=:email")
-    fun ifUserExists(email : String) : List<friendsTable>
-
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(friend: friendsTable)
 
-    @Update
-    suspend fun update(friend: friendsTable)
 
     @Query("DELETE FROM friendsTable")
     suspend fun deleteAll()
+
+    //----------------------------------------------------
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertThroughWorker(friend: friendsTable)
+
+
+
+
+
+
+
+
 }

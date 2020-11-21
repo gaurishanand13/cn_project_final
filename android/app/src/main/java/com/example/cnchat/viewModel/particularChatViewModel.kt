@@ -27,7 +27,6 @@ class particularChatViewModelFactory(private val repository: messageRepositary) 
     }
 }
 
-
 class particularChatViewModel(private val repository: messageRepositary) : ViewModel() {
 
     /**
@@ -35,15 +34,6 @@ class particularChatViewModel(private val repository: messageRepositary) : ViewM
      */
     fun insertMessage(message: messageTable) = viewModelScope.launch {
         repository.insertMessage(message)
-    }
-
-    suspend fun isUserExists(email : String) : List<friendsTable>{
-        var ans : List<friendsTable>? = null
-        val x  = GlobalScope.async {
-            ans =  repository.isUserExists(email)
-        }
-        x.await()
-        return ans!!
     }
 
     //Use this for a particular chat activity to fetch all the messages from the database which are continuously changing.
@@ -55,11 +45,6 @@ class particularChatViewModel(private val repository: messageRepositary) : ViewM
     fun insertUser(friend: friendsTable){
         viewModelScope.launch {
             repository.insertUser(friend)
-        }
-    }
-    fun updateUser(friend: friendsTable){
-        viewModelScope.launch {
-            repository.updateUser(friend)
         }
     }
 }

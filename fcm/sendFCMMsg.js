@@ -1,13 +1,6 @@
 const { admin } = require('./firebase_config')
 
-/**
- * 
- * @param {fcmToken of the user who is going to receive the message} fcmToken 
- * @param {message the fcm token user is going to receive } message 
- * @param {email of the user who is sending this message} sendersUserName 
- * @param {email of the user who is receiving this message i.e fcmToken user} receiversUserName 
- */
-async function sendMsgToUserWithFCMToken(fcmToken, message, sendersUserName, receiversUserName) {
+async function sendMsgToUserWithFCMToken(fcmToken, messageResponse) {
     try {
         const notification_options = {
             priority: "high", //High priority means that this message/notif will be delievered immediately.
@@ -15,15 +8,16 @@ async function sendMsgToUserWithFCMToken(fcmToken, message, sendersUserName, rec
         };
         //Note data in notification is always sent like this - 
         const notif_message = {
-            notification: {
-                title: `${sendersUserName} sent you a message`,
-                body: message
-            },
             data: {
-                sendersEmail: sendersUserName,
-                body: message,
-                title: `${sendersUserName} sent you a message`,
-                receipent: receiversUserName
+                message: messageResponse.message,
+                sendersEmail: messageResponse.sender.email,
+                sendersfirstName: messageResponse.sender.firstName,
+                senderslastName: messageResponse.sender.lastName,
+                recipientsEmail: messageResponse.recipient.email,
+                recipientsfirstName: messageResponse.recipient.firstName,
+                recipientslastName: messageResponse.recipient.lastName,
+                timeOfMessage: messageResponse.timeOfMessage,
+                dateOfMessage: messageResponse.dateOfMessage
             }
         }
         await admin.messaging().sendToDevice(fcmToken, notif_message, notification_options)

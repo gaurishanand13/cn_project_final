@@ -43,7 +43,8 @@ route.post('/', async(req, res) => {
                 firstName: firstName,
                 lastName: lastName,
                 email: email,
-                password: password
+                password: password,
+                fcmToken: 'null' //initially when registering fcm token will be null, but it will be updated soon
             })
             await newUser.save()
             const token = getSignedToken(newUser)

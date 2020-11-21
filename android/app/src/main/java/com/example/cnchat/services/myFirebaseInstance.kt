@@ -1,43 +1,36 @@
 package com.example.cnchat.services
 
-import android.R
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import com.example.cnchat.MainActivity
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.cnchat.R
 import com.example.cnchat.constants
-import com.example.cnchat.myApplicationClass
-import com.example.cnchat.repositary.messageRepositary
-import com.example.cnchat.retrofit.model.message
 import com.example.cnchat.retrofit.retrofitClient
 import com.example.cnchat.room.models.friendsTable
 import com.example.cnchat.room.models.messageTable
 import com.example.cnchat.room.myRoomDatabase
-import com.example.cnchat.viewModel.messageViewModel
-import com.example.cnchat.viewModel.messageViewModelFactory
+import com.example.cnchat.worker.updateDBWorker
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.*
 import org.jetbrains.anko.runOnUiThread
 import java.io.IOException
-import java.lang.Runnable
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.coroutineContext
+
 import kotlin.random.Random
 
 
@@ -64,23 +57,50 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
 
     }
 
+
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
         showNotification(remoteMessage.data)
     }
 
     private fun showNotification(data: Map<String, String>) {
-        val sendersEmail = data["sendersEmail"].toString()
-        val title = data["title"].toString()
-        val receipent = data["receipent"].toString()
-        val body = data["body"].toString()
 
-        //Also save this data in the room database so that data get updated in the app too.
-        Log.i("contextt",applicationContext.toString())
-        GlobalScope.launch {
-            Log.i("contextt",applicationContext.toString())
-            updateDataInRoom(sendersEmail,body,receipent)
-        }
+        val message = data["message"].toString()
+        val sendersEmail = data["sendersEmail"].toString()
+        val sendersfirstName = data["sendersfirstName"].toString()
+        val senderslastName = data["senderslastName"].toString()
+        val recipientsEmail = data["recipientsEmail"].toString()
+        val recipientsfirstName = data["recipientsfirstName"].toString()
+        val recipientslastName = data["recipientslastName"].toString()
+        val timeOfMessage = data["timeOfMessage"].toString()
+        val dateOfMessage = data["dateOfMessage"].toString()
+
+        //Title of the notification
+        val title = "${sendersfirstName} ${senderslastName} sent you a message"
+
+
+
+
+        //Also save this data in the room database so that data get updated in the app too. Saving the data in room using work manager.
+        // We could have done using coroutines too. But i will be doing like this.
+        val workerRequest = OneTimeWorkRequestBuilder<updateDBWorker>()
+
+        //Setting the input data for the worker
+        val data = Data.Builder()
+        data.putString("message",message)
+        data.putString("sendersEmail",sendersEmail)
+        data.putString("sendersfirstName",sendersfirstName)
+        data.putString("senderslastName",senderslastName)
+        data.putString("recipientsEmail",recipientsEmail)
+        data.putString("recipientsfirstName",recipientsfirstName)
+        data.putString("recipientslastName",recipientslastName)
+        data.putString("timeOfMessage",timeOfMessage)
+        data.putString("dateOfMessage",dateOfMessage)
+        workerRequest.setInputData(data.build())
+
+        //Making a request to the work manager
+        WorkManager.getInstance(this).enqueue(workerRequest.build())
+
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val NOTIFICATION_CHANNEL_ID = packageName
@@ -102,70 +122,13 @@ class MyFirebaseInstanceService : FirebaseMessagingService() {
         notificationBuilder.setAutoCancel(true)
             .setDefaults(Notification.DEFAULT_ALL)
             .setWhen(System.currentTimeMillis())
-            .setSmallIcon(R.drawable.ic_input_add)
+            .setSmallIcon(R.drawable.add)
             .setContentTitle(title)
-            .setContentText(body)
+            .setContentText(message)
             .setLargeIcon(getBitmapFromURL(url))
             .setStyle(NotificationCompat.BigTextStyle())
             .setContentInfo("Info")
         notificationManager.notify(Random.nextInt(), notificationBuilder.build())
-
-    }
-
-    suspend fun updateDataInRoom(sendersEmail: String, message: String, receipent: String){
-
-        try {
-
-            //First get the current time
-            val c: Date = Calendar.getInstance().getTime()
-
-            val applicationScope = CoroutineScope(SupervisorJob())
-            val database = myRoomDatabase.getDatabase(this.application, applicationScope)
-            val repository = messageRepositary(database.msgDao(),database.frndsDao())
-
-            //Setting the date
-            var postFormater = SimpleDateFormat("MMMM dd, yyyy")
-            val newDateStr: String = postFormater.format(c)
-
-            //"hh:mm a"
-            postFormater = SimpleDateFormat("hh:mm a")
-            val time = postFormater.format(c)
-
-
-            repository.insertMessage(
-                messageTable(
-                    text = message,
-                    sender = sendersEmail,
-                    recipient = receipent,
-                    dateofmessaging = newDateStr,
-                    timeofmessaging = time
-                )
-            )
-
-            repository.isUserExists(
-                sendersEmail
-            ).also {
-                if(it.size==0){
-                    //Then insert the user
-                    repository.insertUser(
-                        friendsTable(lastMessageExchanged = message, friendsEmail= sendersEmail, date = constants.fromDate(c))
-                    )
-                }
-                else{
-                    //Otherwise update the user in the room database
-                    it[0].lastMessageExchanged = message
-                    it[0].date = constants.fromDate(c)
-                    repository.updateUser(it[0])
-                }
-            }
-
-        }catch (e : Exception){
-            runOnUiThread {
-                Toast.makeText(applicationContext,e.message.toString(),Toast.LENGTH_LONG).show()
-            }
-            Log.i("error ------",e.message.toString())
-            e.printStackTrace()
-        }
     }
 
     companion object {

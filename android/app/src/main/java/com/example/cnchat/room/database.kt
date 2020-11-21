@@ -59,6 +59,7 @@ abstract class myRoomDatabase : RoomDatabase() {
                     "word_database"
                 )
                     .addCallback(myRoomDatabaseCallback(scope))
+                    .allowMainThreadQueries()
                     .build()
                 INSTANCE = instance
                 // return instance

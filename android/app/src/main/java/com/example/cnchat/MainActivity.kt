@@ -1,62 +1,56 @@
 package com.example.cnchat
 
-import android.content.Context
-import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.MenuItem
 import android.widget.*
 import androidx.activity.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import co.intentservice.chatui.ChatView
-import co.intentservice.chatui.models.ChatMessage
 import com.example.cnchat.adapters.chatRoomAdapter
-import com.example.cnchat.retrofit.model.fcmTokenResponse
+import com.example.cnchat.retrofit.model.sendMessageResponse
 import com.example.cnchat.retrofit.retrofitClient
 import com.example.cnchat.room.models.friendsTable
 import com.example.cnchat.room.models.messageTable
-import com.example.cnchat.screens.chatList
-import com.example.cnchat.viewModel.messageViewModel
-import com.example.cnchat.viewModel.messageViewModelFactory
 import com.example.cnchat.viewModel.particularChatViewModel
 import com.example.cnchat.viewModel.particularChatViewModelFactory
 //import com.example.cnchat.adapters.chatRoomAdapter
-import com.github.nkzawa.emitter.Emitter
-import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
 
+    override fun onBackPressed() {
+        finish()
+        super.onBackPressed()
+    }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        finish()
+        return super.onOptionsItemSelected(item)
+    }
     private val chatViewModel: particularChatViewModel by viewModels {
         particularChatViewModelFactory((application as myApplicationClass).repository)
     }
 
-    fun sendMessage(receipentsEmail : String,messge : String){
 
-        retrofitClient.retrofitService.sendMessage(constants.bearer+constants.token,receipentsEmail,messge).enqueue(object : Callback<fcmTokenResponse>{
-
-            override fun onFailure(call: Call<fcmTokenResponse>, t: Throwable) {
+    fun sendMessage(receipentsEmail: String,messge : String,receipentsFirstName : String,receipentsLastName : String){
+        retrofitClient.retrofitService.sendMessage(constants.bearer+constants.token,receipentsEmail,messge).enqueue(object : Callback<sendMessageResponse>{
+            override fun onFailure(call: Call<sendMessageResponse>, t: Throwable) {
                 Toast.makeText(this@MainActivity,t.message,Toast.LENGTH_SHORT).show()
                 Log.i("err in sending message",t.message.toString())
             }
-
-            override fun onResponse(call: Call<fcmTokenResponse>, response: Response<fcmTokenResponse>) {
+            override fun onResponse(call: Call<sendMessageResponse>, response: Response<sendMessageResponse>) {
                 if(response.code()==200){
                     //Now it means data is successfully sent to the other user too. Now let's save this too in our local database
-                    addMessageToDB(receipentsEmail,messge)
+                    addMessageToDB(response.body()!!)
                 }
                 else{
                     val jsonObject = JSONObject(response.errorBody()?.string())
@@ -66,79 +60,76 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-
-
-    fun addMessageToDB(email : String,messge : String){
-
-        val c: Date = Calendar.getInstance().getTime()
-        //Setting the date
-        var postFormater = SimpleDateFormat("MMMM dd, yyyy")
-        val newDateStr: String = postFormater.format(c)
-
-        //"hh:mm a"
-        postFormater = SimpleDateFormat("hh:mm a")
-        val time = postFormater.format(c)
-
+    fun addMessageToDB(myMessage : sendMessageResponse){
 
         chatViewModel.insertMessage(messageTable(
-            text = messge,
-            sender = constants.usersEmail,
-            recipient = email,
-            dateofmessaging = newDateStr,
-            timeofmessaging = time
+                message = myMessage.message,
+                sendersEmail = myMessage.sender.email,
+                sendersFirstName = myMessage.sender.firstName,
+                sendersLastName = myMessage.sender.lastName,
+                recipientsEmail = myMessage.recipient.email,
+                recipientsFirstName = myMessage.recipient.firstName,
+                recipientsLastName = myMessage.recipient.lastName,
+                dateofmessaging = myMessage.dateOfMessage,
+                timeofmessaging = myMessage.timeOfMessage
         ))
 
         //Also update the last message in the table
-        GlobalScope.launch {
-            chatViewModel.isUserExists(
-                email
-            ).also {
-                if(it.size==0){
-                    //Then insert the user
-                    chatViewModel.insertUser(
-                        friendsTable(lastMessageExchanged = messge, friendsEmail= email, date = constants.fromDate(c))
-                    )
-                }
-                else{
-                    //Otherwise update the user in the room database
-                    it[0].lastMessageExchanged = messge
-                    it[0].date = constants.fromDate(c)
-                    chatViewModel.updateUser(it[0])
-                }
-            }
-        }
-
+        chatViewModel.insertUser(
+                friendsTable(
+                        lastMessageExchanged = myMessage.message,
+                        friendsEmail = myMessage.recipient.email,
+                        dateOfMessage = myMessage.dateOfMessage,
+                        timeOfMessage = myMessage.timeOfMessage,
+                        friendsFirstName = myMessage.recipient.firstName,
+                        friendslastName = myMessage.recipient.lastName
+                )
+        )
     }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val receipentsEmail = intent.getStringExtra("reqEmail")
 
+        val receipentsEmail = intent.getStringExtra("reqEmail")!!
+        val receipentsFirstName = intent.getStringExtra("firstName")!!
+        val receipentsLastName = intent.getStringExtra("lastName")!!
 
-        sendBtn.setOnClickListener {
-            if(!messageEditText.text.toString().isEmpty()){
-                //Send the message to the user
-                sendMessage(receipentsEmail!!,messageEditText.text.toString())
+        //Setting up the back button
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeAsUpIndicator(R.drawable.back)
+        //Setting the title of the activity
+        supportActionBar?.title = "${receipentsFirstName} ${receipentsLastName}"
 
-                //Setting the text as empty - after the message is sent.
-                messageEditText.setText("",TextView.BufferType.EDITABLE)
-            }
-        }
 
         //Setting up the adapter
         val list = ArrayList<messageTable>()
         val adapter = chatRoomAdapter(this,list)
         messagelistRecylcerView.layoutManager = LinearLayoutManager(this)
         messagelistRecylcerView.adapter = adapter
-        chatViewModel.getCurrentMessagesLiveData(intent.getStringExtra("reqEmail")!!)
+        chatViewModel.getCurrentMessagesLiveData(receipentsEmail)
             .observe(this, Observer {
                 list.clear()
                 list.addAll(it)
                 adapter.notifyDataSetChanged()
                 messagelistRecylcerView.scrollToPosition(it.size-1)
             })
+
+
+        //Setting up the send message button
+        sendBtn.setOnClickListener {
+            if(!messageEditText.text.toString().isEmpty()){
+                //Send the message to the user
+                sendMessage(receipentsEmail!!,messageEditText.text.toString(),receipentsFirstName,receipentsLastName)
+
+                //Setting the text as empty - after the message is sent.
+                messageEditText.setText("",TextView.BufferType.EDITABLE)
+            }
+        }
     }
+
+
 
 }

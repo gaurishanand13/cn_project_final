@@ -8,6 +8,10 @@ function emailValidator(value) {
     return /^.+@.+\..+$/.test(value);
 }
 
+/**
+ * Note fcm token will be 'null' when logging/registering initially, but after the user has logged in fcm token will be inserted
+ * and fcm token can be updated in it. Just remember to again make fcm token as null when the user logouts.
+ */
 const userSchema = new Schema({
     firstName: {
         type: String,
@@ -26,6 +30,10 @@ const userSchema = new Schema({
             //be saved to the database, instead this error will be thrown
     },
     password: {
+        type: String,
+        required: true
+    },
+    fcmToken: {
         type: String,
         required: true
     }

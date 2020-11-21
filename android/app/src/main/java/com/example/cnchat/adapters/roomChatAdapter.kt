@@ -18,8 +18,8 @@ import com.example.cnchat.socketHelper
 
 class ViewHolder(itemView : View ) : RecyclerView.ViewHolder(itemView)
 
-class chatRoomAdapter(val context: Context,val chatList : ArrayList<messageTable>): RecyclerView.Adapter<ViewHolder>() {
 
+class chatRoomAdapter(val context: Context,val chatList : ArrayList<messageTable>): RecyclerView.Adapter<ViewHolder>() {
     var added_or_left_textView : TextView ? =null
     var nickname: TextView? = null
     var message_one: TextView? = null
@@ -36,7 +36,6 @@ class chatRoomAdapter(val context: Context,val chatList : ArrayList<messageTable
     override fun getItemCount() = chatList.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-
         added_or_left_textView = holder.itemView.findViewById(R.id.added_or_left_textView)
         relativeLayoutMessageOthers = holder.itemView.findViewById(R.id.relativeLayoutMessageOthers)
         relativeLayoutMessageMe = holder.itemView.findViewById(R.id.relativeLayoutMessageMe)
@@ -44,11 +43,11 @@ class chatRoomAdapter(val context: Context,val chatList : ArrayList<messageTable
         message_one = holder.itemView.findViewById(R.id.message_body)
         message_two = holder.itemView.findViewById(R.id.message_body_two)
 
-        nickname!!.text = chatList.get(position).sender
-        message_one!!.text = chatList.get(position).text
-        message_two!!.text = chatList.get(position).text
+        nickname!!.text = chatList.get(position).sendersEmail
+        message_one!!.text = chatList.get(position).message
+        message_two!!.text = chatList.get(position).message
 
-        if(chatList.get(position).sender.equals(constants.usersEmail)){
+        if(chatList.get(position).sendersEmail.equals(constants.usersEmail)){
             relativeLayoutMessageOthers!!.visibility = View.GONE
             added_or_left_textView!!.visibility = View.GONE
             relativeLayoutMessageMe!!.visibility = View.VISIBLE
@@ -58,13 +57,6 @@ class chatRoomAdapter(val context: Context,val chatList : ArrayList<messageTable
             relativeLayoutMessageOthers!!.visibility = View.VISIBLE
             relativeLayoutMessageMe!!.visibility = View.GONE
             added_or_left_textView!!.visibility = View.GONE
-        }
-
-        if(chatList.get(position).text.contains("ADDED" )){
-            relativeLayoutMessageOthers!!.visibility = View.GONE
-            relativeLayoutMessageMe!!.visibility = View.GONE
-            added_or_left_textView!!.visibility = View.VISIBLE
-            added_or_left_textView!!.text = chatList.get(position).text
         }
     }
 }

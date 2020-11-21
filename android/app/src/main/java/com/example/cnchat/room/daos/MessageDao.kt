@@ -11,7 +11,7 @@ import com.example.cnchat.room.models.messageTable
 @Dao
 interface messageDao {
 
-    @Query("SELECT * FROM messageTable WHERE sender=:friend OR recipient=:friend")
+    @Query("SELECT * FROM messageTable WHERE sendersEmail=:friend OR recipientsEmail=:friend")
     fun getAllMessagesOfSpecificUser(friend: String?): LiveData<List<messageTable>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -19,4 +19,8 @@ interface messageDao {
 
     @Query("DELETE FROM messageTable")
     suspend fun deleteAll()
+
+    //----------------------------------------
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertThroughWorker(user: messageTable)
 }

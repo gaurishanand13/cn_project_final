@@ -1,8 +1,5 @@
 const route = require('express').Router();
-const { fcmTokeneModel } = require('./../model/fcmToken')
-const { messageModel } = require('./../model/message')
 const { auth } = require('./../middleware/auth')
-const { sendMsgToUserWithFCMToken } = require('./../fcm/sendFCMMsg')
 const { userModel } = require('./../model/user')
 
 
@@ -35,9 +32,6 @@ function getCurrentDate(date_ob) {
     return ans
 }
 
-function saveMessageInDatabase() {}
-
-
 route.post('/', async(req, res) => {
     const error = new Error()
     try {
@@ -45,7 +39,7 @@ route.post('/', async(req, res) => {
 
             const sendersEmail = req.user.email;
             const receipentsEmail = req.body.email;
-            const message = req.body.message;
+            const message = "no message";
 
             //Now first find the fcm token of the receipent from fcmTokeneModel
             const user = await userModel.findOne({
@@ -69,16 +63,6 @@ route.post('/', async(req, res) => {
                     timeOfMessage: getCurrentTime(dateObj),
                     dateOfMessage: getCurrentDate(dateObj)
                 };
-                //Now it may happen that the user is not logged in, but has an account. Therefore first search if fcmToken is not null
-                if (user.fcmToken === 'null') {
-                    //User has previously made an account, but is not currently logged in. Therefore just
-                    //save this message in message table.
-                } else {
-                    //User exists and is logged in to the app too,
-                    await sendMsgToUserWithFCMToken(user.fcmToken, messageResponse) //First wait for this to happen, if some error happens in sending the message.
-                        //Then it should go to catch part.
-                }
-                saveMessageInDatabase()
                 res.status(200).send(messageResponse)
             } else {
                 error.message = "User doesn't exists";
